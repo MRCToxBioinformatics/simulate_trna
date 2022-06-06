@@ -6,7 +6,8 @@ How to contribute to this project.
 Fork this repository
 --------------------
 
-`Fork this repository before contributing`_. It is a better practice, possibly even enforced, that only Pull Request from forks are accepted - consider a case where there are several main maintainers. In my opinion enforcing forks creates a cleaner representation of the `contributions to the project`_.
+`Fork this repository before contributing`_.
+
 
 Clone your fork
 ~~~~~~~~~~~~~~~
@@ -15,42 +16,13 @@ Next, clone your fork to your local machine, keep it `up to date with the upstre
 
 ::
 
-    git clone https://github.com/YOUR-USERNAME/python-project-skeleton.git
+    git clone https://github.com/YOUR-USERNAME/simulate_trna.git
     cd python-project-skeleton
-    git remote add upstream git://github.com/joaomcteixeira/python-project-skeleton.git
+    git remote add upstream git://github.com/MRCToxBioinformatics/simulate_trna.git
     git fetch upstream
     git merge upstream/master
     git pull origin master
 
-Install for developers
-----------------------
-
-Create a dedicated Python environment where to develop the project.
-
-If you are using :code:`pip` follow the official instructions on `Installing packages using pip and virtual environments`_, most likely what you want is:
-
-::
-
-    python3 -m venv pyprojskel
-    source pyprojskel/bin/activate
-
-If you are using `Anaconda`_ go for:
-
-::
-
-    conda create --name pyprojskel python=3.7
-    conda activate pyprojskel
-
-Where :code:`pyprojskel` is the name you wish to give to the environment dedicated to this project.
-
-Either under *pip* or *conda*, install the package in :code:`develop` mode, and also :ref:`tox<Uniformed Tests with tox>`. **Note**, here I assume our project has **no** dependencies.
-
-::
-
-    python setup.py develop
-    pip install tox
-
-This configuration, together with the use of the ``src`` folder layer, guarantee that you will always run the code after installation. Also, thanks to the ``develop`` flag, any changes in the code will be automatically reflected in the installed version.
 
 Make a new branch
 -----------------
@@ -132,17 +104,12 @@ Also, you can run individual environments if you wish to test only specific func
     tox -e test  # runs unit tests
 
 
-.. _tox.ini: https://github.com/joaomcteixeira/python-project-skeleton/blob/latest/tox.ini
+.. _tox.ini: https://github.com/MRCToxBioinformatics/simulate_trna/blob/latest/tox.ini
 .. _Tox: https://tox.readthedocs.io/en/latest/
 .. _tox is installed: https://tox.readthedocs.io/en/latest/install.html
-.. _MANIFEST.in: https://github.com/joaomcteixeira/python-project-skeleton/blob/master/MANIFEST.in
-.. _Fork this repository before contributing: https://github.com/joaomcteixeira/python-project-skeleton/network/members
+.. _MANIFEST.in: https://github.com/github.com/MRCToxBioinformatics/simulate_trna/blob/master/MANIFEST.in
+.. _Fork this repository before contributing: https://github.com/MRCToxBioinformatics/simulate_trna/network/members
 .. _up to date with the upstream: https://gist.github.com/CristinaSolana/1885435
-.. _contributions to the project: https://github.com/joaomcteixeira/python-project-skeleton/network
 .. _Gitflow Workflow: https://www.atlassian.com/git/tutorials/comparing-workflows/gitflow-workflow
-.. _Pull Request: https://github.com/joaomcteixeira/python-project-skeleton/pulls
-.. _PULLREQUEST.rst: https://github.com/joaomcteixeira/python-project-skeleton/blob/master/docs/PULLREQUEST.rst
-.. _1: https://git-scm.com/docs/git-merge#Documentation/git-merge.txt---no-ff
-.. _2: https://stackoverflow.com/questions/9069061/what-is-the-difference-between-git-merge-and-git-merge-no-ff
-.. _Installing packages using pip and virtual environments: https://packaging.python.org/guides/installing-using-pip-and-virtual-environments/#creating-a-virtual-environment
-.. _Anaconda: https://www.anaconda.com/
+.. _Pull Request: https://github.com/MRCToxBioinformatics/simulate_trna/python-project-skeleton/pulls
+.. _PULLREQUEST.rst: https://github.com/github.com/MRCToxBioinformatics/simulate_trna/blob/master/docs/PULLREQUEST.rst

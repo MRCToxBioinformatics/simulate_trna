@@ -35,15 +35,15 @@ long_description = '{}\n{}'.format(
     )
 
 setup(
-    name='jmct-sampleproject',
-    version='0.9.2',
-    description='A skeleton template for Python projects.',
+    name='simulatetrna',
+    version='0.1.0',
+    description='Generic simulation of tRNA-Seq reads',
     long_description=long_description,
     long_description_content_type='text/x-rst',
-    license='MIT License',
-    author='Joao Miguel Correia Teixeira',
-    author_email='joaomcteixeira@gmail.com',
-    url='https://github.com/joaomcteixeira/python-project-skeleton',
+    license='The Unlicense',
+    author='Tom Smith',
+    author_email='tss38@cam.ac.uk   ',
+    url='https://github.com/MRCToxBioinformatics/simulate_trna',
     packages=find_packages('src'),
     package_dir={'': 'src'},
     py_modules=[splitext(basename(i))[0] for i in glob("src/*.py")],
@@ -53,8 +53,7 @@ setup(
         # complete classifier list:
         # http://pypi.python.org/pypi?%3Aaction=list_classifiers
         'Development Status :: 4 - Beta',
-        # 'License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)',
-        'License :: OSI Approved :: MIT License',
+        'License :: OSI Approved :: The Unlicense',
         'Intended Audience :: Science/Research',
         'Natural Language :: English',
         'Operating System :: POSIX',
@@ -66,15 +65,14 @@ setup(
         'Topic :: Scientific/Engineering :: Bio-Informatics',
         ],
     project_urls={
-        'webpage': 'https://github.com/joaomcteixeira/python-project-skeleton',
-        'Documentation': 'https://python-project-skeleton.readthedocs.io/en/latest/',
-        'Changelog': 'https://github.com/joaomcteixeira/python-project-skeleton/blob/master/docs/CHANGELOG.rst',
-        'Issue Tracker': 'https://github.com/joaomcteixeira/python-project-skeleton/issues',
-        'Discussion Forum': 'https://github.com/joaomcteixeira/python-project-skeleton/discussions',
+        'webpage': 'https://github.com/MRCToxBioinformatics/simulate_trna',
+        'Documentation': 'https://simulate_trna.readthedocs.io/en/latest',
+        'Changelog': 'https://github.com/MRCToxBioinformatics/simulate_trna/blob/master/docs/CHANGELOG.rst',
+        'Issue Tracker': 'https://github.com/MRCToxBioinformatics/simulate_trna/issues',
+        'Discussion Forum': 'https://github.com/MRCToxBioinformatics/simulate_trna/discussions',
         },
     keywords=[
-        'ci', 'continuous-integration', 'project-template',
-        'project-skeleton', 'sample-project',
+        'tRNA', 'simulate', 'RNASeq'
         # eg: 'keyword1', 'keyword2', 'keyword3',
         ],
     python_requires='>=3.7, <4',
@@ -93,7 +91,7 @@ setup(
         ],
     entry_points={
         'console_scripts': [
-            'samplecli1= sampleproject.cli_int1:main',
+            'simulatetrnacli1= simulatetrnaproject.cli_int1:main',
             ]
         #
         },

@@ -2,20 +2,20 @@
 Python Package Skeleton Template
 ================================
 
-.. image:: https://github.com/joaomcteixeira/python-project-skeleton/workflows/tests/badge.svg?branch=main
-    :target: https://github.com/joaomcteixeira/python-project-skeleton/actions?workflow=tests
+.. image:: https://github.com/MRCToxBioinformatics/simulate_trna/workflows/tests/badge.svg?branch=main
+    :target: https://github.com/MRCToxBioinformatics/simulate_trna/actions?workflow=tests
     :alt: unit tests
 
-.. image:: https://github.com/joaomcteixeira/python-project-skeleton/workflows/build/badge.svg?branch=main
-    :target: https://github.com/joaomcteixeira/python-project-skeleton/actions?workflow=build
+.. image:: https://github.com/MRCToxBioinformatics/simulate_trna/workflows/build/badge.svg?branch=main
+    :target: https://github.com/MRCToxBioinformatics/simulate_trna/actions?workflow=build
     :alt: build
 
-.. image:: https://codecov.io/gh/joaomcteixeira/python-project-skeleton/branch/main/graph/badge.svg
-    :target: https://codecov.io/gh/joaomcteixeira/python-project-skeleton
+.. image:: https://codecov.io/gh/MRCToxBioinformatics/simulate_trna/branch/main/graph/badge.svg
+    :target: https://codecov.io/gh/MRCToxBioinformatics/simulate_trna
     :alt: Codecov
 
 .. image:: https://api.codeclimate.com/v1/badges/d96cc9a1841a819cd4f5/maintainability
-   :target: https://codeclimate.com/github/joaomcteixeira/python-project-skeleton/maintainability
+   :target: https://codeclimate.com/github/MRCToxBioinformatics/simulate_trna/maintainability
    :alt: Maintainability
 
 .. image:: https://img.shields.io/codeclimate/tech-debt/joaomcteixeira/python-project-skeleton
@@ -23,8 +23,13 @@ Python Package Skeleton Template
     :alt: Code Climate technical debt
 
 .. image:: https://img.shields.io/readthedocs/python-project-skeleton/latest?label=Read%20the%20Docs
-    :target: https://python-project-skeleton.readthedocs.io/en/latest/index.html
+    :target: https://simulate_trna.readthedocs.io/en/latest/index.html
     :alt: Read the Docs
+
+
+UPDATE BELOW!!!!
+----------------
+
 
 Summary
 =======
