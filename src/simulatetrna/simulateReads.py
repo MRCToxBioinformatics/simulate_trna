@@ -2,6 +2,8 @@ import numpy as np
 
 from numpy.random import choice
 
+import gzip
+
 from Bio import SeqIO
 from Bio.SeqRecord import SeqRecord
 from Bio.Seq import Seq
@@ -15,6 +17,18 @@ from random import choices
 from importlib import reload
 
 from collections import defaultdict, Counter
+
+def make_gt(fasta_infile, mu=100, sd=50):
+    '''make a random ground truth for each feature in a fasta_infile
+    Values below zero are replaced with zero
+    '''
+    records = list(SeqIO.parse(fasta_infile, "fasta"))
+
+    counts = norm.rvs(mu, sd, size=len(records))
+    counts[counts<0]=0
+
+    return(dict(zip([record.name for record in records],
+                    [round(c) for c in counts])))
 
 def addSeqError(base, size=None):
     'Returns a random error for a given (DNA) base'
@@ -106,35 +120,48 @@ class simulated_read_sequences:
 
         feature_name = self.getFeatureName()
 
-        mut_sig = alignment_summary.contig_base_frequencies[feature_name]
+        # if feature_name is not in contig_base_frequencies, no bases will be mutated
+        if feature_name in self.alignment_summary.contig_base_frequencies.keys():
 
-        # if at anticodon level, need to convert to tRNA seq level
-        if self.summary_level == 'anticodon':
-            mut_sig = {x : mut_sig[self.alignment_summary.trna_pos_to_alignment_pos[self.seq_name][x]]
-                       for x in self.alignment_summary.trna_pos_to_alignment_pos[self.seq_name].keys()}
+            mut_sig = defaultdict(int, self.alignment_summary.contig_base_frequencies[feature_name])
 
-        for ix, ref in enumerate(self.seq):
-            base_mut_sig = mut_sig[ix][ref]
+            # if at anticodon level, need to convert to tRNA seq level
+            if self.summary_level == 'anticodon':
+                mut_sig = {x : mut_sig[self.alignment_summary.trna_pos_to_alignment_pos[self.seq_name][x]]
+                        for x in self.alignment_summary.trna_pos_to_alignment_pos[self.seq_name].keys()}
 
-            if base_mut_sig[ref]>0:
-                mutation_rate = 1 - (base_mut_sig[ref] / sum(base_mut_sig.values()))
+            for ix, ref in enumerate(self.seq):
 
-            elif sum(base_mut_sig.values()) == 0: # No data for position. For now, assert mutation rate is zero!
-                mutation_rate = 0
+                # If alignment_summary has been pickled, mut_sig[ix] is a dict, otherwise,
+                # it's a Counter and will return values regardless if key present.
+                # try-except is to catch no key for dict, if-elif-else is to
+                # catch no key for Counter
+                try:
+                    base_mut_sig = mut_sig[ix][ref]
 
-            else: # Reference never seen, so mutation rate = 1
-                mutation_rate = 1
+                    if base_mut_sig[ref]>0:
+                        mutation_rate = 1 - (base_mut_sig[ref] / sum(base_mut_sig.values()))
 
-            if mutation_rate >= mutation_threshold:
+                    elif sum(base_mut_sig.values()) == 0: # No data for position. For now, assert mutation rate is zero!
+                        mutation_rate = 0
 
-                mutated_bases = choices(list(base_mut_sig.keys()),
-                                        weights=base_mut_sig.values(),
-                                        k=self.reads.shape[0])
+                    else: # Reference never seen, so mutation rate = 1
+                        mutation_rate = 1
 
-                # Need to work out why line below is needed!!
-                self.reads = self.reads.copy()
+                except: # No data for position. For now, assert mutation rate is zero!
+                    mutation_rate = 0
 
-                self.reads[:,ix] = np.array(mutated_bases)
+
+                if mutation_rate >= mutation_threshold:
+
+                    mutated_bases = choices(list(base_mut_sig.keys()),
+                                            weights=base_mut_sig.values(),
+                                            k=self.reads.shape[0])
+
+                    # Need to work out why line below is needed!!
+                    self.reads = self.reads.copy()
+
+                    self.reads[:,ix] = np.array(mutated_bases)
 
 
     def truncate(self):
@@ -208,3 +235,48 @@ class simulated_read_sequences:
                     description=self.read_names[ix])
 
             SeqIO.write(sim_record, filehandle, "fastq")
+
+
+def simulate_reads(infile,
+                   outfile,
+                   ground_truth,
+                   error_rate=1/100,
+                   mutation_threshold=None,
+                   truncate=False,
+                   alignment_summary=None,
+                   summary_level='anticodon'):
+
+    records = list(SeqIO.parse(infile, "fasta"))
+
+    # Sanity checks for correct imput when using alignment summary for mutations/truncation signatures
+    if mutation_threshold is not None or truncate:
+        assert alignment_summary is not None, 'Need to supply alignment_summary'
+
+    if(outfile.endswith('.gz')):
+        fastq_out = gzip.open(outfile, "wt")
+    else:
+        fastq_out = open(outfile, "w")
+
+    for feature in records:
+
+        feature_count = ground_truth[feature.name]
+
+        sim_sequences = simulated_read_sequences(
+            seq_name=feature.name,
+            seq=feature.seq,
+            count=feature_count,
+            summary_level=summary_level,
+            alignment_summary=alignment_summary)
+
+        if error_rate > 0:
+             sim_sequences.addSeqError(error_rate)
+
+        if mutation_threshold is not None:
+            sim_sequences.addMutations(mutation_threshold)
+
+        if truncate:
+            sim_sequences.truncate()
+
+        sim_sequences.write(fastq_out)
+
+    fastq_out.close()

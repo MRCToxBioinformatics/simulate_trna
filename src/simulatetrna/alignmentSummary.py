@@ -21,6 +21,10 @@ from collections import defaultdict
 
 from re import sub
 
+from copy import deepcopy
+
+from pickle import dump
+
 class trnaAlignmentSummary:
     '''Base class for alignment summary
 
@@ -30,7 +34,6 @@ class trnaAlignmentSummary:
         alignment_pos_to_trna_pos: Map from aligned sequence position to trna seq position
         alignment_coordinates: Counter for alignment coordinates (e.g to find sites of truncations)
         contig_base_frequencies: Counter for base frequencies
-        alignments: pysam.AlignmentFile
         anticodons: Anticodons
         trna_to_anticodon: Map from tRNA name to anticodon group
         anticodon_to_trnas: Map from anticodon group to tRNAs
@@ -48,14 +51,10 @@ class trnaAlignmentSummary:
                 lambda : defaultdict(
                     lambda: Counter())))
 
-        self.alignments = None
         self.anticodons = None
         self.trna_records = None
         self.trna_to_anticodon = {}
         self.anticodon_to_trnas = defaultdict(set)
-
-    def loadSam(self, samfile_path):
-        self.alignments = pysam.Samfile(samfile_path, 'r')
 
     def loadTrnaFasta(self, trna_seq_fasta_filepath):
         self.trna_records = SeqIO.parse(trna_seq_fasta_filepath, "fasta")
@@ -91,6 +90,38 @@ class trnaAlignmentSummary:
         else:
             return(self.alignment_coordinates[trna_name])
 
+    def pickle(self, outfile):
+        '''Convert collections.defaultdict and collections.Counter to plain dict
+        so the object can be pickled'''
+
+        # To avoid updating the attributes of the object, we create a copy
+        # and update its attributes
+        pickleable = deepcopy(self)
+
+        pickleable.anticodon_to_trnas = dict(pickleable.anticodon_to_trnas)
+
+        pickleable.trna_pos_to_alignment_pos = dict(pickleable.trna_pos_to_alignment_pos)
+
+        pickleable.alignment_pos_to_trna_pos = dict(pickleable.alignment_pos_to_trna_pos)
+        for k, v in pickleable.alignment_pos_to_trna_pos.items():
+            pickleable.alignment_pos_to_trna_pos[k] = dict(v)
+
+        pickleable.alignment_coordinates = dict(pickleable.alignment_coordinates)
+        for k, v in pickleable.alignment_coordinates.items():
+            pickleable.alignment_coordinates[k] = dict(v)
+            for k2, v2 in pickleable.alignment_coordinates[k].items():
+                pickleable.alignment_coordinates[k][k2] = dict(v2)
+
+        pickleable.contig_base_frequencies = dict(pickleable.contig_base_frequencies)
+        for k, v in pickleable.contig_base_frequencies.items():
+            pickleable.contig_base_frequencies[k] = dict(v)
+            for k2, v2 in pickleable.contig_base_frequencies[k].items():
+                pickleable.contig_base_frequencies[k][k2] = dict(v2)
+                for k3, v3 in pickleable.contig_base_frequencies[k][k2].items():
+                    pickleable.contig_base_frequencies[k][k2][k3] = dict(v3)
+
+        dump(pickleable, open(outfile, 'wb'))
+
 
 class clustalwtrnaAlignmentSummary(trnaAlignmentSummary):
     '''
@@ -98,7 +129,7 @@ class clustalwtrnaAlignmentSummary(trnaAlignmentSummary):
     '''
     def build(self, samfile_path, trna_seq_fasta_filepath):
 
-        self.loadSam(samfile_path)
+        alignments = pysam.Samfile(samfile_path, 'r')
 
         self.loadTrnaFasta(trna_seq_fasta_filepath)
 
@@ -146,7 +177,7 @@ class clustalwtrnaAlignmentSummary(trnaAlignmentSummary):
 
             # Summarise alignment coordinates
             for contig in name2alignment.keys():
-                for read in self.alignments.fetch(contig):
+                for read in alignments.fetch(contig):
                     # reference_end points to one past the last aligned residue (https://pysam.readthedocs.io/en/latest/api.html)
                     trna_pos_end = read.reference_end-1
                     trna_pos_start = read.reference_start
@@ -162,7 +193,7 @@ class clustalwtrnaAlignmentSummary(trnaAlignmentSummary):
             for contig in name2alignment.keys():
 
                 pysamstats_records = list(stat_variation(
-                    self.alignments, trna_seq_fasta_filepath, chrom=contig))
+                    alignments, trna_seq_fasta_filepath, chrom=contig))
 
                 for pysamstat_record in pysamstats_records:
 
