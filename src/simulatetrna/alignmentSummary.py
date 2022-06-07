@@ -32,6 +32,8 @@ class trnaAlignmentSummary:
         contig_base_frequencies: Counter for base frequencies
         alignments: pysam.AlignmentFile
         anticodons: Anticodons
+        trna_to_anticodon: Map from tRNA name to anticodon group
+        anticodon_to_trnas: Map from anticodon group to tRNAs
     '''
 
     def __init__(self):
@@ -49,6 +51,8 @@ class trnaAlignmentSummary:
         self.alignments = None
         self.anticodons = None
         self.trna_records = None
+        self.trna_to_anticodon = {}
+        self.anticodon_to_trnas = defaultdict(set)
 
     def loadSam(self, samfile_path):
         self.alignments = pysam.Samfile(samfile_path, 'r')
@@ -62,6 +66,12 @@ class trnaAlignmentSummary:
         if self.trna_records is None:
             raise ValueError('Need to first parse the tRNA fasta with: loadTrnaFasta')
         self.anticodons = set([sub('-\d+-\d+', '', x) for x in self.trna_records.keys()])
+        for anticodon in self.anticodons:
+            for trna in self.trna_records.keys():
+                if(sub('-\d+-\d+', '', trna) == anticodon):
+                    self.trna_to_anticodon[trna] = anticodon
+                    self.anticodon_to_trnas[anticodon].add(trna)
+
 
     def getErrorProfile(self, trna_name):
         if self.contig_base_frequencies is None:
@@ -96,15 +106,16 @@ class clustalwtrnaAlignmentSummary(trnaAlignmentSummary):
 
 
         for anticodon in self.anticodons:
-            trna_seqs = [y for (x,y) in self.trna_records.items() if anticodon in x]
+            tRNAs = self.anticodon_to_trnas[anticodon]
+            #[y for (x,y) in self.trna_records.items() if anticodon in x]
 
             # Some anticodons have a single tRNA sequence, in which case, no need to cluster!
-            if len(trna_seqs) > 1:
+            if len(tRNAs) > 1:
                 tmp_file = NamedTemporaryFile(delete=False)
 
                 with open(tmp_file.name, 'w') as outf:
-                    for trna_seq in trna_seqs:
-                        SeqIO.write(trna_seq, outf, "fasta")
+                    for tRNA in tRNAs:
+                        SeqIO.write(self.trna_records[tRNA], outf, "fasta")
 
                 tmp_file.close()
                 clustaw_cline = ClustalwCommandline(infile=tmp_file.name, outfile=tmp_file.name, quiet=True)
@@ -117,7 +128,8 @@ class clustalwtrnaAlignmentSummary(trnaAlignmentSummary):
                 for trna_seq_aligned in clustaw_alignments:
                     name2alignment[trna_seq_aligned.description] = trna_seq_aligned.seq
             else:
-                name2alignment = {trna_seqs[0].name:trna_seqs[0].seq}
+                tRNA = tRNAs.pop()
+                name2alignment = {tRNA:self.trna_records[tRNA]}
 
             # Tom: All the lines below could be generic. Consider extracting to base class level methods
             # if other instances of the class are tested, e.g clustal Omega.
