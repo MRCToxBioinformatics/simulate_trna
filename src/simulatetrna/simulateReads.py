@@ -109,6 +109,11 @@ class simulated_read_sequences:
         sim_errors.shape = self.reads.shape
 
         mask = sim_errors > 0
+
+        # Need to work out why line below is needed. Without out, replacement
+        # with errors does not work as intended. Every column with any 1 in mask
+        # is given the same error base!
+        self.reads=self.reads.copy()
         self.reads[mask] = addErrors(self.reads[mask])
 
 
@@ -271,7 +276,7 @@ def simulate_reads(infile,
         if error_rate > 0:
              sim_sequences.addSeqError(error_rate)
 
-        if mutation_threshold is not None:
+        if mutation_threshold is not None and mutation_threshold > 0:
             sim_sequences.addMutations(mutation_threshold)
 
         if truncate:
