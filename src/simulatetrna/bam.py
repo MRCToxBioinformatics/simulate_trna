@@ -7,6 +7,9 @@ def iterate_reads(inreads):
 
     for read in inreads:
 
+        if read.is_unmapped:
+            continue
+
         read_name = read.qname
 
         if read_name != last_read_name:
@@ -24,8 +27,6 @@ def iterate_reads(inreads):
 def filter_sam(infile, outfile):
     inbam = pysam.Samfile(infile, 'r')
     outbam = pysam.AlignmentFile(outfile, "w", template=inbam)
-    inreads = inbam.fetch()
-
 
     for reads in iterate_reads(inbam):
 
