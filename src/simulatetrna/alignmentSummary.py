@@ -51,7 +51,7 @@ class trnaAlignmentSummary:
                 lambda : defaultdict(
                     lambda: Counter())))
 
-        self.anticodons = None
+        self.anticodons = set()
         self.trna_records = None
         self.trna_to_anticodon = {}
         self.anticodon_to_trnas = defaultdict(set)
@@ -61,15 +61,20 @@ class trnaAlignmentSummary:
         self.trna_records = {x.name:x for x in self.trna_records}
 
     def getAntiCodons(self):
-        'Assumes naming convention. May need to update'
+
         if self.trna_records is None:
             raise ValueError('Need to first parse the tRNA fasta with: loadTrnaFasta')
-        self.anticodons = set([sub('-\d+-\d+', '', x) for x in self.trna_records.keys()])
-        for anticodon in self.anticodons:
-            for trna in self.trna_records.keys():
-                if(sub('-\d+-\d+', '', trna) == anticodon):
-                    self.trna_to_anticodon[trna] = anticodon
-                    self.anticodon_to_trnas[anticodon].add(trna)
+
+        for trna_name in self.trna_records.keys():
+            #Assumes naming convention. May need to update
+            species, aa, ac, iso, iso_n = trna_name.split('-')
+
+            # To make anticodon names unique for nuc and Mt and for Ecoli spike in (if included)
+            full_ac_desc = '%s_%s' % (species, ac)
+
+            self.anticodons.add(full_ac_desc)
+            self.trna_to_anticodon[trna_name] = full_ac_desc
+            self.anticodon_to_trnas[full_ac_desc].add(trna_name)
 
 
     def getErrorProfile(self, trna_name):

@@ -12,23 +12,47 @@ from scipy.stats import binom
 
 import simulatetrna.alignmentSummary as alignmentSummary
 import pysam
+import re
 from random import choices
 
 from importlib import reload
 
 from collections import defaultdict, Counter
 
-def make_gt(fasta_infile, mu=100, sd=50):
+def make_gt(fasta_infile, n_reads, mu=10, sd=5, filter=None):
     '''make a random ground truth for each feature in a fasta_infile
     Values below zero are replaced with zero
+    mu and sd used to generate random numbers from Gaussian,
+    which is then exponeniated (base=2) and rounded to int
     '''
     records = list(SeqIO.parse(fasta_infile, "fasta"))
 
-    counts = norm.rvs(mu, sd, size=len(records))
-    counts[counts<0]=0
+    if filter is not None:
+        filtered_records = []
+        retained_records = []
+        for record in records:
+            if re.search(filter, record.name) is None:
+                retained_records.append(record)
+            else:
+                filtered_records.append(record)
+        records = retained_records
 
-    return(dict(zip([record.name for record in records],
-                    [round(c) for c in counts])))
+    record_names = [record.name for record in records]
+
+    
+    counts = [2**x for x in norm.rvs(mu, sd, size=len(records))]
+
+    if filter is not None:
+        for filtered_record in filtered_records:
+            counts.append(0)
+            record_names.append(filtered_record.name)
+
+    adjustment_factor = n_reads / sum(counts)
+    adjusted_counts = [round(x * adjustment_factor) for x in counts]
+
+    gt = dict(zip(record_names, adjusted_counts))
+
+    return(gt)
 
 def addSeqError(base, size=None):
     'Returns a random error for a given (DNA) base'
@@ -264,6 +288,10 @@ def simulate_reads(infile,
 
     for feature in records:
 
+        # some features make have been filtered out in make_gt()
+        if feature.name not in ground_truth.keys():
+            continue
+
         feature_count = ground_truth[feature.name]
 
         sim_sequences = simulated_read_sequences(
@@ -276,12 +304,24 @@ def simulate_reads(infile,
         if error_rate > 0:
              sim_sequences.addSeqError(error_rate)
 
-        if mutation_threshold is not None and mutation_threshold > 0:
-            sim_sequences.addMutations(mutation_threshold)
+        if (mutation_threshold is not None and mutation_threshold > 0) or truncate:
 
-        if truncate:
-            sim_sequences.truncate()
+            # catch instance where no alignments for the feature. In which case, don't simulate any reads
+            try:
+                feature_name = sim_sequences.getFeatureName()
+                feature_truncation_sig = sim_sequences.alignment_summary.alignment_coordinates[feature_name]
+            except KeyError:
+                ground_truth[feature.name] = 0
+                continue
+
+            if mutation_threshold is not None and mutation_threshold > 0:
+                sim_sequences.addMutations(mutation_threshold)
+
+            if truncate:
+                sim_sequences.truncate()
 
         sim_sequences.write(fastq_out)
 
     fastq_out.close()
+
+    return(ground_truth)
