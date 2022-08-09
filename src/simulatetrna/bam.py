@@ -1,5 +1,7 @@
+import os
 import pysam
 import pandas as pd
+
 
 def iterate_reads(inreads):
     last_read_name = None
@@ -24,6 +26,22 @@ def iterate_reads(inreads):
 
         last_read_name = read_name
 
+def keep_random_alignment(infile, outfile):
+
+    inbam = pysam.Samfile(infile, 'r')
+    unsorted_outfile = outfile + 'tmp.bam'
+    outbam = pysam.AlignmentFile(unsorted_outfile, "wb", template=inbam)
+
+    for reads in iterate_reads(inbam):
+        outbam.write(reads.pop())
+
+    outbam.close()
+
+    pysam.sort(unsorted_outfile, "-o", outfile)
+    os.unlink(unsorted_outfile)
+    pysam.index(outfile)
+
+
 def filter_sam(infile, outfile):
     inbam = pysam.Samfile(infile, 'r')
     outbam = pysam.AlignmentFile(outfile, "w", template=inbam)
@@ -39,6 +57,5 @@ def filter_sam(infile, outfile):
 
         for read in updated_reads:
             outbam.write(read)
-
 
     outbam.close()
