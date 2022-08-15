@@ -169,6 +169,7 @@ class clustalwtrnaAlignmentSummary(trnaAlignmentSummary):
 
             # Tom: All the lines below could be generic. Consider extracting to base class level methods
             # if other instances of the class are tested, e.g clustal Omega.
+
             # Get map from tRNA sequence position to multiple alignment position
             for contig in name2alignment.keys():
                 trna_ix = 0

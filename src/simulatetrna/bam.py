@@ -3,7 +3,7 @@ import pysam
 import pandas as pd
 
 
-def iterate_reads(inreads):
+def iterate_reads(inreads, allow_multimapping=True):
     last_read_name = None
     reads = ()
 
@@ -17,7 +17,8 @@ def iterate_reads(inreads):
         if read_name != last_read_name:
 
             if last_read_name is not None:
-                yield reads
+                if allow_multimapping or len(reads)==1:
+                    yield reads
 
             reads = set((read,))
 
@@ -25,6 +26,10 @@ def iterate_reads(inreads):
             reads.add(read)
 
         last_read_name = read_name
+
+    if allow_multimapping or len(reads)==1:
+        yield reads
+
 
 def keep_random_alignment(infile, outfile):
 
