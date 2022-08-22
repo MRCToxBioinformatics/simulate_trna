@@ -140,7 +140,6 @@ class clustalwtrnaAlignmentSummary(trnaAlignmentSummary):
 
         self.getAntiCodons()
 
-
         for anticodon in self.anticodons:
             tRNAs = self.anticodon_to_trnas[anticodon]
             #[y for (x,y) in self.trna_records.items() if anticodon in x]
@@ -154,19 +153,20 @@ class clustalwtrnaAlignmentSummary(trnaAlignmentSummary):
                         SeqIO.write(self.trna_records[tRNA], outf, "fasta")
 
                 tmp_file.close()
-                clustaw_cline = ClustalwCommandline(infile=tmp_file.name, outfile=tmp_file.name, quiet=True)
+                clustaw_cline = ClustalwCommandline(
+                    infile=tmp_file.name, outfile=tmp_file.name, output='fasta', quiet=True)
                 clustaw_cline()
 
-                clustaw_alignments = AlignIO.read(tmp_file.name, format='clustal')
+                clustaw_alignments = AlignIO.read(tmp_file.name, format='fasta')
 
                 name2alignment = {}
 
                 for trna_seq_aligned in clustaw_alignments:
+
                     name2alignment[trna_seq_aligned.description] = trna_seq_aligned.seq
             else:
                 tRNA = tRNAs.pop()
-                name2alignment = {tRNA:self.trna_records[tRNA]}
-
+                name2alignment = {tRNA:self.trna_records[tRNA].seq}
             # Tom: All the lines below could be generic. Consider extracting to base class level methods
             # if other instances of the class are tested, e.g clustal Omega.
 
