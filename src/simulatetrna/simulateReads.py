@@ -19,11 +19,13 @@ from importlib import reload
 
 from collections import defaultdict, Counter
 
-def make_gt(fasta_infile, n_reads, mu=10, sd=5, filter=None):
+def make_gt(fasta_infile, n_reads, mu=10, sd=5, filter=None, genes=None):
     '''make a random ground truth for each feature in a fasta_infile
     Values below zero are replaced with zero
     mu and sd used to generate random numbers from Gaussian,
     which is then exponeniated (base=2) and rounded to int
+
+ 
     '''
     records = list(SeqIO.parse(fasta_infile, "fasta"))
 
@@ -37,8 +39,19 @@ def make_gt(fasta_infile, n_reads, mu=10, sd=5, filter=None):
                 filtered_records.append(record)
         records = retained_records
 
-    record_names = [record.name for record in records]
+    if genes is not None:
+        if filter is None:
+            filtered_records = []
 
+        retained_records = []
+        for record in records:
+            if record.name in genes:
+                retained_records.append(record)
+            else:
+                filtered_records.append(record)
+        records = retained_records            
+    
+    record_names = [record.name for record in records]
     
     counts = [2**x for x in norm.rvs(mu, sd, size=len(records))]
 
