@@ -2,14 +2,16 @@ import os
 import pysam
 import pandas as pd
 
-
-def iterate_reads(inreads, allow_multimapping=True):
+def iterate_reads(inreads, allow_multimapping=True, remove_trx=False):
     last_read_name = None
     reads = ()
 
     for read in inreads:
 
         if read.is_unmapped:
+            continue
+
+        if remove_trx and "tRX" in read.reference_name:
             continue
 
         read_name = read.qname

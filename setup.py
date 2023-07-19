@@ -29,9 +29,13 @@ def read(*names, **kwargs):
 #     re.sub(':[a-z]+:`~?(.*?)`', r'``\1``', read(join('docs', 'CHANGELOG.rst')))
 #     )
 
-long_description = '{}\n{}'.format(
-    read('README.rst'),
-    read(join('docs', 'CHANGELOG.rst')),
+#long_description = '{}\n{}'.format(
+#    read('README.rst'),
+#    read(join('docs', 'CHANGELOG.rst')),
+#    )
+
+long_description = '{}'.format(
+    read('README.rst')
     )
 
 setup(
@@ -67,7 +71,6 @@ setup(
     project_urls={
         'webpage': 'https://github.com/MRCToxBioinformatics/simulate_trna',
         'Documentation': 'https://simulate_trna.readthedocs.io/en/latest',
-        'Changelog': 'https://github.com/MRCToxBioinformatics/simulate_trna/blob/master/docs/CHANGELOG.rst',
         'Issue Tracker': 'https://github.com/MRCToxBioinformatics/simulate_trna/issues',
         'Discussion Forum': 'https://github.com/MRCToxBioinformatics/simulate_trna/discussions',
         },
