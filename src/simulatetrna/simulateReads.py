@@ -24,9 +24,8 @@ def make_gt(fasta_infile, n_reads, mu=10, sd=5, filter=None, genes=None):
     Values below zero are replaced with zero
     mu and sd used to generate random numbers from Gaussian,
     which is then exponeniated (base=2) and rounded to int
-
- 
     '''
+
     records = list(SeqIO.parse(fasta_infile, "fasta"))
 
     if filter is not None:
@@ -287,6 +286,25 @@ def simulate_reads(infile,
                    truncate=False,
                    alignment_summary=None,
                    summary_level='anticodon'):
+    '''Simulate a fastq with tRNA-Seq reads
+
+    infile: fasta file with tRNA sequences
+
+    outfile: fastq filename. Can end with '.gz'
+
+    ground_truth: dictionary with read counts per tRNA sequence
+
+    error_rate: Frequency with which random base errors should be added
+
+    mutation_threshold: Mimimum frequency for mutation (misincorporations) for position to be. Default=None, under which misincorporations are not added to sequences
+
+    truncate: Set True to truncate sequences
+
+    alignment_summary: alignmentSummary.clustalwtrnaAlignmentSummary object containing the misincorporation frequencies and truncation frequencies. Default=None. Must be set if mutation_threshold!=None or truncate=True.
+
+    summary_level: Use the alignment_summary at anticodon or sequence level to define misincorporation frequencies and truncation frequencies
+    '''
+    
 
     records = list(SeqIO.parse(infile, "fasta"))
 

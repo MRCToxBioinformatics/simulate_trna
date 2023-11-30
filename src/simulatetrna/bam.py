@@ -3,6 +3,18 @@ import pysam
 import pandas as pd
 
 def iterate_reads(inreads, allow_multimapping=True, remove_trx=False, remove_mt=False):
+    '''
+    Yield groups of reads with the same read name
+
+    inreads: pysam.Samfile object
+
+    allow_multimapping: Set True to include multimapped reads
+
+    remove_trx: Set True to remove tRNAs with 'tRX' in name
+
+    remove_mt: Set True to remove tRNAs with 'MTtRNA' in name
+    '''
+
     last_read_name = None
     reads = ()
 
@@ -38,6 +50,14 @@ def iterate_reads(inreads, allow_multimapping=True, remove_trx=False, remove_mt=
 
 def keep_random_alignment(infile, outfile):
 
+    '''
+    Take a samfile and retain a single random alignment for multimapped reads. Will also sort and index the output
+
+    infile: filepath for output samfile
+
+    outfile: filepath for output bamfile
+    '''
+
     inbam = pysam.Samfile(infile, 'r')
     unsorted_outfile = outfile + 'tmp.bam'
     outbam = pysam.AlignmentFile(unsorted_outfile, "wb", template=inbam)
@@ -53,6 +73,15 @@ def keep_random_alignment(infile, outfile):
 
 
 def filter_sam(infile, outfile):
+    '''
+    Take a samfile and for each read, retain only the alignments with an alignment score equal to the best alignment score for the read. 
+
+    infile: filepath for output samfile
+
+    outfile: filepath for output bamfile
+    '''
+
+
     inbam = pysam.Samfile(infile, 'r')
     outbam = pysam.AlignmentFile(outfile, "w", template=inbam)
 
