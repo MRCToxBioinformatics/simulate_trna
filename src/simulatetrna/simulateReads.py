@@ -15,8 +15,6 @@ import pysam
 import re
 from random import choices
 
-from importlib import reload
-
 from collections import defaultdict, Counter
 
 def make_gt(fasta_infile, n_reads, mu=10, sd=5, filter=None, genes=None):
