@@ -51,14 +51,38 @@ class trnaAlignmentSummary:
                 lambda : defaultdict(
                     lambda: Counter())))
 
+        self.isodecoders = set()
         self.anticodons = set()
+        
         self.trna_records = None
+        
         self.trna_to_anticodon = {}
         self.anticodon_to_trnas = defaultdict(set)
+
+
+        self.trna_to_isodecoder = {}
+        self.isodecoder_to_trnas = defaultdict(set)
 
     def loadTrnaFasta(self, trna_seq_fasta_filepath):
         self.trna_records = SeqIO.parse(trna_seq_fasta_filepath, "fasta")
         self.trna_records = {x.name:x for x in self.trna_records}
+
+
+    def getIsodecoders(self):
+
+        if self.trna_records is None:
+            raise ValueError('Need to first parse the tRNA fasta with: loadTrnaFasta')
+
+        for trna_name in self.trna_records.keys():
+            #Assumes naming convention. May need to update
+            species, aa, ac, iso, iso_n = trna_name.split('-')
+
+            # To make isodecoder names unique for nuc and Mt and for Ecoli spike in (if included)
+            full_iso_desc = '%s_%s_%s' % (species, ac, iso)
+
+            self.isodecoders.add(full_ac_desc)
+            self.trna_to_isodecoder[trna_name] = full_iso_desc
+            self.isodecoder_to_trnas[full_iso_desc].add(trna_name)
 
     def getAntiCodons(self):
 
@@ -217,3 +241,94 @@ class clustalwtrnaAlignmentSummary(trnaAlignmentSummary):
                     self.contig_base_frequencies[anticodon][malignment_pos][ref]['T'] += pysamstat_record['T']
                     self.contig_base_frequencies[anticodon][malignment_pos][ref]['C'] += pysamstat_record['C']
                     self.contig_base_frequencies[anticodon][malignment_pos][ref]['G'] += pysamstat_record['G']
+
+
+class clustalwMisincorpTruncAlignmentSummary(trnaAlignmentSummary):
+    '''
+    Summarising misincorporations and truncations at the isodecoder level using clustalw
+    '''
+    def build(self, samfile_path, trna_seq_fasta_filepath):
+
+        alignments = pysam.Samfile(samfile_path, 'r')
+
+        self.loadTrnaFasta(trna_seq_fasta_filepath)
+
+        self.getIsodecoders()
+
+        for isodecoder in self.isodecoders:
+            tRNAs = self.isodecoders_to_trnas[isodecoder]
+            
+            # Some isodecoders have a single tRNA sequence, in which case, no need to cluster!
+            if len(tRNAs) > 1:
+                tmp_file = NamedTemporaryFile(delete=False)
+
+                with open(tmp_file.name, 'w') as outf:
+                    for tRNA in tRNAs:
+                        SeqIO.write(self.trna_records[tRNA], outf, "fasta")
+
+                tmp_file.close()
+                clustaw_cline = ClustalwCommandline(
+                    infile=tmp_file.name, outfile=tmp_file.name, output='fasta', quiet=True)
+                clustaw_cline()
+
+                clustaw_alignments = AlignIO.read(tmp_file.name, format='fasta')
+
+                name2alignment = {}
+
+                for trna_seq_aligned in clustaw_alignments:
+
+                    name2alignment[trna_seq_aligned.description] = trna_seq_aligned.seq
+            else:
+                tRNA = tRNAs.pop()
+                name2alignment = {tRNA:self.trna_records[tRNA].seq}
+            # Tom: All the lines below could be generic. Consider extracting to base class level method(s)
+            # if other instances of the class are tested, e.g clustal Omega.
+
+            # Get map from tRNA sequence position to multiple alignment position
+            for contig in name2alignment.keys():
+                trna_ix = 0
+                for pos_ix, pos in enumerate(name2alignment[contig]):
+                    if(pos!='-'):
+                        self.trna_pos_to_alignment_pos[contig][trna_ix] = pos_ix
+                        self.alignment_pos_to_trna_pos[contig][pos_ix] = trna_ix
+                        trna_ix += 1
+                    else:
+                        self.alignment_pos_to_trna_pos[contig][pos_ix] = nan
+
+            # Summarise alignment coordinates
+            for contig in name2alignment.keys():
+                for read in alignments.fetch(contig):
+                    # reference_end points to one past the last aligned residue (https://pysam.readthedocs.io/en/latest/api.html)
+                    trna_pos_end = read.reference_end-1
+                    trna_pos_start = read.reference_start
+
+                    malignment_pos_end = self.trna_pos_to_alignment_pos[contig][trna_pos_end]
+                    malignment_pos_start = self.trna_pos_to_alignment_pos[contig][trna_pos_start]
+
+
+                    self.alignment_coordinates[contig][trna_pos_end][trna_pos_start] += 1
+
+                    self.alignment_coordinates[isodecoder][trna_pos_end][trna_pos_start] += 1
+
+            for contig in name2alignment.keys():
+
+                pysamstats_records = list(stat_variation(
+                    alignments, trna_seq_fasta_filepath, chrom=contig))
+
+                for pysamstat_record in pysamstats_records:
+
+                    ref = pysamstat_record['ref']
+
+                    trna_pos = pysamstat_record['pos']
+                    malignment_pos = self.trna_pos_to_alignment_pos[contig][trna_pos]
+
+                    self.contig_base_frequencies[contig][trna_pos][ref]['A'] += pysamstat_record['A']
+                    self.contig_base_frequencies[contig][trna_pos][ref]['T'] += pysamstat_record['T']
+                    self.contig_base_frequencies[contig][trna_pos][ref]['C'] += pysamstat_record['C']
+                    self.contig_base_frequencies[contig][trna_pos][ref]['G'] += pysamstat_record['G']
+
+                    self.contig_base_frequencies[isodecoder][malignment_pos][ref]['A'] += pysamstat_record['A']
+                    self.contig_base_frequencies[isodecoder][malignment_pos][ref]['T'] += pysamstat_record['T']
+                    self.contig_base_frequencies[isodecoder][malignment_pos][ref]['C'] += pysamstat_record['C']
+                    self.contig_base_frequencies[isodecoder][malignment_pos][ref]['G'] += pysamstat_record['G']
+
