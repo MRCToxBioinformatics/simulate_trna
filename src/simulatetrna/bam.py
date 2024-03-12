@@ -48,7 +48,7 @@ def iterate_reads(inreads, allow_multimapping=True, remove_trx=False, remove_mt=
         yield reads
 
 
-def keep_random_alignment(infile, outfile):
+def keep_random_alignment(infile, outfile, unique_isodecoder=False):
 
     '''
     Take a samfile and retain a single random alignment for multimapped reads. Will also sort and index the output
@@ -62,9 +62,27 @@ def keep_random_alignment(infile, outfile):
     unsorted_outfile = outfile + 'tmp.bam'
     outbam = pysam.AlignmentFile(unsorted_outfile, "wb", template=inbam)
 
-    for reads in iterate_reads(inbam):
-        outbam.write(reads.pop())
+    if unique_isodecoder:
+        for reads in iterate_reads(inbam):
+            write_out = False
+            
+            assignments = set([read.reference_name for read in reads])
+            
+            if len(assignments) == 1:
+                write_out = True
+            
+            else:
+                isodecoders = set(['-'.join(x.split('-')[0:4]) for x in assignments])
+            
+                if len(isodecoders)==1:
+                    write_out = True
 
+            if write_out:
+                outbam.write(reads.pop())
+    else:
+        for reads in iterate_reads(inbam):
+            outbam.write(reads.pop())
+        
     outbam.close()
 
     pysam.sort(unsorted_outfile, "-o", outfile)
@@ -72,7 +90,7 @@ def keep_random_alignment(infile, outfile):
     pysam.index(outfile)
 
 
-def filter_sam(infile, outfile):
+def filter_sam(infile, tmp_file_unsorted, outfile):
     '''
     Take a samfile and for each read, retain only the alignments with an alignment score equal to the best alignment score for the read. 
 
@@ -83,7 +101,7 @@ def filter_sam(infile, outfile):
 
 
     inbam = pysam.Samfile(infile, 'r')
-    outbam = pysam.AlignmentFile(outfile, "w", template=inbam)
+    outbam_unsorted = pysam.AlignmentFile(tmp_file_unsorted, "wb", template=inbam)
 
     for reads in iterate_reads(inbam):
 
@@ -95,6 +113,9 @@ def filter_sam(infile, outfile):
                 updated_reads.remove(read)
 
         for read in updated_reads:
-            outbam.write(read)
+            outbam_unsorted.write(read)
 
-    outbam.close()
+    outbam_unsorted.close()
+
+    pysam.sort("-o", outfile, tmp_file_unsorted)
+    pysam.index(outfile)

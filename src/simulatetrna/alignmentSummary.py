@@ -14,7 +14,7 @@ from Bio import SeqIO
 from Bio import AlignIO
 from Bio.Align.Applications import ClustalwCommandline
 
-from os import unlink
+from os import unlink, remove
 
 from collections import Counter
 from collections import defaultdict
@@ -80,7 +80,7 @@ class trnaAlignmentSummary:
             # To make isodecoder names unique for nuc and Mt and for Ecoli spike in (if included)
             full_iso_desc = '%s_%s_%s' % (species, ac, iso)
 
-            self.isodecoders.add(full_ac_desc)
+            self.isodecoders.add(full_iso_desc)
             self.trna_to_isodecoder[trna_name] = full_iso_desc
             self.isodecoder_to_trnas[full_iso_desc].add(trna_name)
 
@@ -183,6 +183,8 @@ class clustalwtrnaAlignmentSummary(trnaAlignmentSummary):
 
                 clustaw_alignments = AlignIO.read(tmp_file.name, format='fasta')
 
+                remove(tmp_file.name)
+
                 name2alignment = {}
 
                 for trna_seq_aligned in clustaw_alignments:
@@ -246,6 +248,7 @@ class clustalwtrnaAlignmentSummary(trnaAlignmentSummary):
 class clustalwMisincorpTruncAlignmentSummary(trnaAlignmentSummary):
     '''
     Summarising misincorporations and truncations at the isodecoder level using clustalw
+    Assumes reads aligning to multiple isodecoders have been removed!!
     '''
     def build(self, samfile_path, trna_seq_fasta_filepath):
 
@@ -256,7 +259,7 @@ class clustalwMisincorpTruncAlignmentSummary(trnaAlignmentSummary):
         self.getIsodecoders()
 
         for isodecoder in self.isodecoders:
-            tRNAs = self.isodecoders_to_trnas[isodecoder]
+            tRNAs = self.isodecoder_to_trnas[isodecoder]
             
             # Some isodecoders have a single tRNA sequence, in which case, no need to cluster!
             if len(tRNAs) > 1:
@@ -273,6 +276,8 @@ class clustalwMisincorpTruncAlignmentSummary(trnaAlignmentSummary):
 
                 clustaw_alignments = AlignIO.read(tmp_file.name, format='fasta')
 
+                remove(tmp_file.name)
+
                 name2alignment = {}
 
                 for trna_seq_aligned in clustaw_alignments:
@@ -281,6 +286,7 @@ class clustalwMisincorpTruncAlignmentSummary(trnaAlignmentSummary):
             else:
                 tRNA = tRNAs.pop()
                 name2alignment = {tRNA:self.trna_records[tRNA].seq}
+
             # Tom: All the lines below could be generic. Consider extracting to base class level method(s)
             # if other instances of the class are tested, e.g clustal Omega.
 
@@ -305,10 +311,7 @@ class clustalwMisincorpTruncAlignmentSummary(trnaAlignmentSummary):
                     malignment_pos_end = self.trna_pos_to_alignment_pos[contig][trna_pos_end]
                     malignment_pos_start = self.trna_pos_to_alignment_pos[contig][trna_pos_start]
 
-
-                    self.alignment_coordinates[contig][trna_pos_end][trna_pos_start] += 1
-
-                    self.alignment_coordinates[isodecoder][trna_pos_end][trna_pos_start] += 1
+                    self.alignment_coordinates[isodecoder][malignment_pos_end][malignment_pos_start] += 1
 
             for contig in name2alignment.keys():
 
@@ -321,11 +324,6 @@ class clustalwMisincorpTruncAlignmentSummary(trnaAlignmentSummary):
 
                     trna_pos = pysamstat_record['pos']
                     malignment_pos = self.trna_pos_to_alignment_pos[contig][trna_pos]
-
-                    self.contig_base_frequencies[contig][trna_pos][ref]['A'] += pysamstat_record['A']
-                    self.contig_base_frequencies[contig][trna_pos][ref]['T'] += pysamstat_record['T']
-                    self.contig_base_frequencies[contig][trna_pos][ref]['C'] += pysamstat_record['C']
-                    self.contig_base_frequencies[contig][trna_pos][ref]['G'] += pysamstat_record['G']
 
                     self.contig_base_frequencies[isodecoder][malignment_pos][ref]['A'] += pysamstat_record['A']
                     self.contig_base_frequencies[isodecoder][malignment_pos][ref]['T'] += pysamstat_record['T']
